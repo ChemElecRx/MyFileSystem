@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <sstream>
+#include <stack>
 
 class File {
 public:
@@ -67,10 +68,12 @@ class FileSystem {
 public:
     Directory* root;
     Directory* currentDirectory;
+    std::vector<std::string> pathStack;
 
     FileSystem() {
         root = new Directory("/");
         currentDirectory = root;
+        pathStack.push_back("/");
     }
 
     ~FileSystem() {
@@ -119,27 +122,71 @@ public:
         Directory* dir = navigateToDirectory(path);
         if (dir) {
             currentDirectory = dir;
+            updatePathStack(path);
         } else {
             std::cout << "Directory not found: " << path << std::endl;
         }
     }
 
+    void printWorkingDirectory() {
+        for (const std::string& dir : pathStack) {
+            std::cout << dir;
+        }
+        std::cout << std::endl;
+    }
+
 private:
     Directory* navigateToDirectory(std::string path) {
         Directory* current = (path[0] == '/') ? root : currentDirectory;
-        size_t pos = (path[0] == '/') ? 1 : 0; // Skip initial '/' if absolute path
-        while (pos < path.size()) {
-            size_t nextPos = path.find('/', pos);
-            std::string dirName = path.substr(pos, nextPos - pos);
-            if (current->directories.find(dirName) != current->directories.end()) {
-                current = current->directories[dirName];
-            } else {
-                return nullptr;
+        if (path == "/") {
+            return root;
+        }
+        std::istringstream pathStream(path);
+        std::string token;
+        while (std::getline(pathStream, token, '/')) {
+            if (token == "..") {
+                if (current != root) {
+                    current = findParentDirectory(current);
+                }
+            } else if (token != "." && !token.empty()) {
+                if (current->directories.find(token) != current->directories.end()) {
+                    current = current->directories[token];
+                } else {
+                    return nullptr;
+                }
             }
-            if (nextPos == std::string::npos) break;
-            pos = nextPos + 1;
         }
         return current;
+    }
+
+    Directory* findParentDirectory(Directory* dir) {
+        Directory* parent = root;
+        std::vector<std::string> path;
+        if (pathStack.size() > 1) {
+            pathStack.pop_back();
+        }
+        for (size_t i = 1; i < pathStack.size(); ++i) {
+            parent = parent->directories[pathStack[i]];
+        }
+        return parent;
+    }
+
+    void updatePathStack(std::string path) {
+        if (path[0] == '/') {
+            pathStack.clear();
+            pathStack.push_back("/");
+        }
+        std::istringstream pathStream(path);
+        std::string token;
+        while (std::getline(pathStream, token, '/')) {
+            if (token == "..") {
+                if (pathStack.size() > 1) {
+                    pathStack.pop_back();
+                }
+            } else if (token != "." && !token.empty()) {
+                pathStack.push_back(token + "/");
+            }
+        }
     }
 
     std::string getFileName(std::string path) {
@@ -182,6 +229,8 @@ int main() {
             fs.listDirectory(arg1);
         } else if (cmd == "cd") {
             fs.changeDirectory(arg1);
+        } else if (cmd == "pwd") {
+            fs.printWorkingDirectory();
         } else {
             std::cout << "Unknown command: " << cmd << std::endl;
         }
