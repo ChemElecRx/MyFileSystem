@@ -31,11 +31,19 @@ public:
     }
 
     void createFile(std::string fileName) {
-        files[fileName] = new File(fileName);
+        if (files.find(fileName) == files.end()) {
+            files[fileName] = new File(fileName);
+        } else {
+            std::cerr << "File already exists: " << fileName << std::endl;
+        }
     }
 
     void createDirectory(std::string dirName) {
-        directories[dirName] = new Directory(dirName);
+        if (directories.find(dirName) == directories.end()) {
+            directories[dirName] = new Directory(dirName);
+        } else {
+            std::cerr << "Directory already exists: " << dirName << std::endl;
+        }
     }
 
     File* getFile(std::string fileName) {
@@ -95,6 +103,8 @@ public:
             File* file = dir->getFile(fileName);
             if (file) {
                 file->content = content;
+            } else {
+                std::cerr << "File not found: " << fileName << std::endl;
             }
         }
     }
@@ -124,12 +134,12 @@ public:
             currentDirectory = dir;
             updatePathStack(path);
         } else {
-            std::cout << "Directory not found: " << path << std::endl;
+            std::cerr << "Directory not found: " << path << std::endl;
         }
     }
 
     void printWorkingDirectory() {
-        for (const std::string& dir : pathStack) {
+        for(const std::string& dir : pathStack) {
             std::cout << dir;
         }
         std::cout << std::endl;
@@ -145,13 +155,12 @@ private:
         std::string token;
         while (std::getline(pathStream, token, '/')) {
             if (token == "..") {
-                if (current != root) {
-                    current = findParentDirectory(current);
-                }
+                current = findParentDirectory(current);
             } else if (token != "." && !token.empty()) {
                 if (current->directories.find(token) != current->directories.end()) {
                     current = current->directories[token];
                 } else {
+                    std::cerr << "Directory not found: " << token << std::endl;
                     return nullptr;
                 }
             }
@@ -160,13 +169,12 @@ private:
     }
 
     Directory* findParentDirectory(Directory* dir) {
-        Directory* parent = root;
-        std::vector<std::string> path;
-        if (pathStack.size() > 1) {
-            pathStack.pop_back();
+        if (dir == root) {
+            return root;
         }
-        for (size_t i = 1; i < pathStack.size(); ++i) {
-            parent = parent->directories[pathStack[i]];
+        Directory* parent = root;
+        for (size_t i = 1; i < pathStack.size() - 1; ++i) {
+            parent = parent->directories[pathStack[i].substr(0, pathStack[i].length() - 1)];
         }
         return parent;
     }
@@ -232,7 +240,7 @@ int main() {
         } else if (cmd == "pwd") {
             fs.printWorkingDirectory();
         } else {
-            std::cout << "Unknown command: " << cmd << std::endl;
+            std::cerr << "Unknown command: " << cmd << std::endl;
         }
     }
 
