@@ -22,6 +22,7 @@ public:
     Directory(std::string name) : name(name) {}
 
     ~Directory() {
+        // Destructor to free allocated memory for files and directories
         for (auto& pair : files) {
             delete pair.second;
         }
@@ -30,6 +31,7 @@ public:
         }
     }
 
+    // Method to create a new file in the directory
     void createFile(std::string fileName) {
         if (files.find(fileName) == files.end()) {
             files[fileName] = new File(fileName);
@@ -38,6 +40,7 @@ public:
         }
     }
 
+    // Method to create a new sub-directory in the directory
     void createDirectory(std::string dirName) {
         if (directories.find(dirName) == directories.end()) {
             directories[dirName] = new Directory(dirName);
@@ -46,6 +49,7 @@ public:
         }
     }
 
+    // Method to get a file by name from the directory
     File* getFile(std::string fileName) {
         if (files.find(fileName) != files.end()) {
             return files[fileName];
@@ -53,6 +57,7 @@ public:
         return nullptr;
     }
 
+    // Method to get a sub-directory by name from the directory
     Directory* getDirectory(std::string dirName) {
         if (directories.find(dirName) != directories.end()) {
             return directories[dirName];
@@ -60,6 +65,7 @@ public:
         return nullptr;
     }
 
+    // Method to list contents (files and sub-directories) of the directory
     void listContents() {
         std::cout << "Directories:" << std::endl;
         for (const auto& pair : directories) {
@@ -79,15 +85,18 @@ public:
     std::vector<std::string> pathStack;
 
     FileSystem() {
+        // Constructor to initialize the file system
         root = new Directory("/");
         currentDirectory = root;
         pathStack.push_back("/");
     }
 
+    // Destructor to free allocated memory for the file system
     ~FileSystem() {
         delete root;
     }
 
+    // Method to create a file at a specified path
     void createFile(std::string path) {
         Directory* dir = navigateToDirectory(path);
         std::string fileName = getFileName(path);
@@ -96,6 +105,7 @@ public:
         }
     }
 
+    // Method to write content to a file at a specified path
     void writeFile(std::string path, std::string content) {
         Directory* dir = navigateToDirectory(path);
         std::string fileName = getFileName(path);
@@ -109,6 +119,7 @@ public:
         }
     }
 
+    // Method to read content from a file at a specified path
     std::string readFile(std::string path) {
         Directory* dir = navigateToDirectory(path);
         std::string fileName = getFileName(path);
@@ -121,6 +132,7 @@ public:
         return "";
     }
 
+    // Method to list contents of a directory at a specified path
     void listDirectory(std::string path) {
         Directory* dir = navigateToDirectory(path);
         if (dir) {
@@ -128,6 +140,7 @@ public:
         }
     }
 
+    // Method to change current directory to a specified path
     void changeDirectory(std::string path) {
         Directory* dir = navigateToDirectory(path);
         if (dir) {
@@ -138,6 +151,7 @@ public:
         }
     }
 
+    // Method to print the current working directory path
     void printWorkingDirectory() {
         for(const std::string& dir : pathStack) {
             std::cout << dir;
@@ -146,6 +160,7 @@ public:
     }
 
 private:
+    // Private method to navigate to a directory specified by path
     Directory* navigateToDirectory(std::string path) {
         Directory* current = (path[0] == '/') ? root : currentDirectory;
         if (path == "/") {
@@ -168,6 +183,7 @@ private:
         return current;
     }
 
+    // Private method to find the parent directory of a given directory
     Directory* findParentDirectory(Directory* dir) {
         if (dir == root) {
             return root;
@@ -179,6 +195,7 @@ private:
         return parent;
     }
 
+    // Private method to update the path stack based on a new path
     void updatePathStack(std::string path) {
         if (path[0] == '/') {
             pathStack.clear();
@@ -197,6 +214,7 @@ private:
         }
     }
 
+    // Private method to extract the file name from a path
     std::string getFileName(std::string path) {
         size_t pos = path.find_last_of('/');
         return path.substr(pos + 1);
@@ -204,6 +222,7 @@ private:
 };
 
 int main() {
+    // Main function to interact with the file system through command-line interface
     FileSystem fs;
     std::string command;
 
@@ -217,6 +236,7 @@ int main() {
             break;
         }
 
+        // Parse command and arguments
         std::istringstream iss(command);
         std::string cmd, arg1, arg2;
         iss >> cmd >> arg1;
@@ -225,6 +245,7 @@ int main() {
             arg2 = arg2.substr(1);
         }
 
+        // Execute commands based on user input
         if (cmd == "mkdir") {
             fs.currentDirectory->createDirectory(arg1);
         } else if (cmd == "mkfile") {
